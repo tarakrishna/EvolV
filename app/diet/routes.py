@@ -35,16 +35,15 @@ def get_today_summary(current_user: str = Depends(get_current_user_id)):
         
     return SummaryResponse(scope="date", date=today_str, totals=totals, entries=entries)
 
-# --- NEW ANALYTICS ENDPOINT ---
 @router.get("/analytics", response_model=AnalyticsResponse)
 def get_analytics(current_user: str = Depends(get_current_user_id)):
     diet_collection = get_diet_collection()
     
-    # 1. Define date range for the last 7 days
+    #Define date range for the last 7 days
     today = datetime.utcnow().date()
     seven_days_ago = today - timedelta(days=6)
     
-    # 2. MongoDB Aggregation Pipeline
+    #MongoDB Aggregation Pipeline
     pipeline = [
         {
             "$match": {
@@ -66,7 +65,7 @@ def get_analytics(current_user: str = Depends(get_current_user_id)):
     
     results = list(diet_collection.aggregate(pipeline))
     
-    # 3. Process results for charts
+    #Process results for charts
     
     # For the Bar Chart (Last 7 days calories)
     daily_calories_map = {res["_id"]: res["totalCalories"] for res in results}
@@ -78,12 +77,12 @@ def get_analytics(current_user: str = Depends(get_current_user_id)):
             DailyCalorieData(date=day_str, calories=daily_calories_map.get(day_str, 0))
         )
 
-    # For the Pie Chart (Macronutrient distribution)
+    #For the Pie Chart (Macronutrient distribution)
     total_protein = sum(res.get("totalProtein", 0) for res in results)
     total_carbs = sum(res.get("totalCarbs", 0) for res in results)
     total_fats = sum(res.get("totalFats", 0) for res in results)
 
-    # Avoid division by zero if no macros are logged
+    #Avoid division by zero if no macros are logged
     if (total_protein + total_carbs + total_fats) == 0:
          macro_distribution = MacroTotals(protein=0, carbs=0, fats=0)
     else:
